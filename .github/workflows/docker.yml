@@ -106,10 +106,15 @@ jobs:
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
+      - name: Artifact Suffix
+        id: artifact-suffix
+        run: |
+            echo "artifact-suffix=$(echo "${{ matrix.platform }}" | tr / _)" >> $GITHUB_OUTPUT
+
       - name: Upload Digest
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.tag }}-digests-${{ matrix.platform }}
+          name: ${{ inputs.tag }}-digests-${{ steps.artifact-suffix.outputs.artifact-suffix }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -125,7 +130,7 @@ jobs:
       - name: Download Digests
         uses: actions/download-artifact@v4
         with:
-          pattern: ${{ inputs.tag }}-digests
+          pattern: ${{ inputs.tag }}-digests-*
           path: /tmp/digests
           merge-multiple: true
 
