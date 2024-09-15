@@ -32,10 +32,6 @@ on:
         description: The token used to authenticate with hub.docker.com.
         required: true
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 env:
   REGISTRY_IMAGE: ${{ inputs.dockerhub-username }}/${{ github.event.repository.name }}
 
