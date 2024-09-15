@@ -28,7 +28,7 @@ jobs:
           password: ${{ secrets.dockerhub-token }}
 
       - name: Update Repo Description
-        uses: peter-evans/dockerhub-description@v3
+        uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ inputs.dockerhub-username }}
           password: ${{ secrets.dockerhub-token }}

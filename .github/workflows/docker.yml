@@ -22,6 +22,11 @@ on:
         default: true
         type: boolean
         description: If enabled, a build cache will be attached to the docker build process.
+      build-summary:
+        required: false
+        default: false
+        type: boolean
+        description: See https://docs.docker.com/build/ci/github-actions/build-summary/
     secrets:
       dockerhub-token:
         description: The token used to authenticate with hub.docker.com.
@@ -64,7 +69,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ inputs.dockerhub-username }}
           password: ${{ secrets.dockerhub-token }}
@@ -104,9 +109,9 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload Digest
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.tag }}-digests
+          name: ${{ inputs.tag }}-digests-${{ matrix.platform }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -120,10 +125,11 @@ jobs:
       packages: write
     steps:
       - name: Download Digests
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.tag }}-digests
+          pattern: ${{ inputs.tag }}-digests
           path: /tmp/digests
+          merge-multiple: true
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -144,7 +150,7 @@ jobs:
           password: ${{ secrets.dockerhub-token }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
