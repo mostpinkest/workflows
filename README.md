@@ -20,4 +20,4 @@ jobs:
 
 * [`docker.yml`](https://github.com/Logicer16/workflows/blob/main/.github/workflows/docker.yml) build and publish a docker image
 * [`dockerhub-description.yml`](https://github.com/Logicer16/workflows/blob/main/.github/workflows/dockerhub-description.yml) update description of an image on Docker Hub to make the repo's `README.md` and short description.
-* [`update-repo.yml`](https://github.com/Logicer16/workflows/blob/main/.github/workflows/update-repo.yml) update a repo by merging upstream and updating submodules
+* [`update-repo.yml`](https://github.com/Logicer16/workflows/blob/main/.github/workflows/update-repo.yml) update a repo by rebasing from upstream and updating submodules
