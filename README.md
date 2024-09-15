@@ -1,6 +1,6 @@
 # Logicer's Reusable GitHub Actions Workflows
 
-A useful set of reusable workflows common to many projects.
+A useful set of reusable workflows common to many of my projects.
 
 ## Usage
 
