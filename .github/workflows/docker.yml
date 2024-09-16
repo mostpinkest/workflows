@@ -79,7 +79,7 @@ jobs:
 
       - name: Inject go-build-cache into Docker
         if: ${{ inputs.build-cache }}
-        uses: reproducible-containers/buildkit-cache-dance@v2
+        uses: reproducible-containers/buildkit-cache-dance@v3
         with:
           cache-source: build-cache
 
