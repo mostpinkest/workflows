@@ -34,7 +34,8 @@ jobs:
         run: |
           git remote add upstream https://github.com/${{ inputs.upstream }}.git
           git fetch upstream
-          git rebase upstream/master
+          # https://stackoverflow.com/a/50056710/15752250
+          git rebase upstream/$(git remote show upstream | sed -n '/HEAD branch/s/.*: //p')
 
       - name: Submodule Update
         run: |
@@ -46,7 +47,8 @@ jobs:
         id: change-check
         run: |
           git fetch origin
-          echo "NEW_COMMITS=$([[ $(git rev-parse master) != $(git rev-parse origin/master) ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          DEFAULT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+          echo "NEW_COMMITS=$([[ $(git rev-parse $DEFAULT_BRANCH) != $(git rev-parse origin/$DEFAULT_BRANCH) ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Push Changes
         uses: ad-m/github-push-action@master
