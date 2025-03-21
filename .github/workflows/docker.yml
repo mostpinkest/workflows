@@ -17,11 +17,12 @@ on:
         default: TAG
         type: string
         description: The dockerfile's buildarg which contains the target tag.
-      build-cache:
+      build-cache-map:
         required: false
-        default: true
-        type: boolean
-        description: If enabled, a build cache will be attached to the docker build process.
+        default: ""
+        type: string
+        description: |
+          A `source: target` map for cache mounts to be passed to https://github.com/reproducible-containers/buildkit-cache-dance. Must be formatted as a JSON object. If omited or set to an empty string, mount caching steps will be bypassed. 
       build-summary:
         required: false
         default: false
@@ -69,19 +70,26 @@ jobs:
         with:
           username: ${{ inputs.dockerhub-username }}
           password: ${{ secrets.dockerhub-token }}
+
+      - name: Extract Cachable Paths
+        id: cachable-paths
+        run: |
+          echo 'cachable-paths<<EOF' >> $GITHUB_OUTPUT
+          echo '${{ inputs.build-cache-map }}' | jq 'keys[]' -r >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
           
-      - name: Setup Go Build Cache for Docker
-        if: ${{ inputs.build-cache }}
+      - name: Setup Mount Cache for Docker
+        if: ${{ inputs.build-cache-map != '' }}
         uses: actions/cache@v4
         with:
-          path: build-cache
-          key: ${{ inputs.tag }}-${{ matrix.platform }}-build-cache
+          path: ${{ steps.cachable-paths.outputs.cachable-paths }}
+          key: ${{ inputs.tag }}-${{ matrix.platform }}-mount-cache
 
-      - name: Inject go-build-cache into Docker
-        if: ${{ inputs.build-cache }}
+      - name: Inject Mount Cache into Docker
+        if: ${{ inputs.build-cache-map != '' }}
         uses: reproducible-containers/buildkit-cache-dance@v3
         with:
-          cache-source: build-cache
+          cache-map: ${{ inputs.build-cache-map }}
 
       - name: Build
         id: build
