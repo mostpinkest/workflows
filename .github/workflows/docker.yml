@@ -168,10 +168,18 @@ jobs:
           username: ${{ inputs.dockerhub-username }}
           password: ${{ secrets.dockerhub-token }}
 
+      - name: Login to GitHub Container Registry
+        if: ${{ always() }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Manifest List and Push
         working-directory: /tmp/digests
         run: |
-          echo buildx imagetools create $(echo "$DOCKER_METADATA_OUTPUT_JSON" '["docker.io", "ghcr.io"]' | jq -scr '.[1] as $registries | .[0].tags | map(. as $tag | $registries | map("-t " + . + "/" + $tag)) | flatten | join(" ")') \
+          docker buildx imagetools create $(echo "$DOCKER_METADATA_OUTPUT_JSON" '["docker.io", "ghcr.io"]' | jq -scr '.[1] as $registries | .[0].tags | map(. as $tag | $registries | map("-t " + . + "/" + $tag)) | flatten | join(" ")') \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
       
       # - name: Check API Rate Limit
@@ -183,14 +191,6 @@ jobs:
       #   run: |
       #     docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
       #       $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
-
-      # - name: Login to GitHub Container Registry
-      #   if: ${{ always() }}
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.repository_owner }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
       
       # - name: Check API Rate Limit
       #   if: ${{ always() }}
