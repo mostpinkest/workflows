@@ -174,18 +174,33 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check API Rate Limit
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/rate_limit
 
       - name: Create Manifest List and Push
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+      
+      - name: Check API Rate Limit
+        if: ${{ always() }}
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/rate_limit
           
       - name: Push Image to GHCR
+        if: ${{ always() }}
         run: |
           docker buildx imagetools create \
             --tag ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ inputs.tag }} \
             ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag }}
+      
+      - name: Check API Rate Limi
+        if: ${{ always() }}t
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/rate_limit
 
       - name: Inspect Image
         run: |
