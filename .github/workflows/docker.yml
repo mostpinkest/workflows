@@ -178,12 +178,6 @@ jobs:
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
 
-      # prevent rate limiting
-      - name: Logout from Docker Hub
-        if: ${{ always() }}
-        run: |
-          docker logout docker.io
-
       - name: Login to GitHub Container Registry
         if: ${{ always() }}
         uses: docker/login-action@v3
