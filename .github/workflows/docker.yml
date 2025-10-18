@@ -171,7 +171,7 @@ jobs:
       - name: Create Manifest List and Push
         working-directory: /tmp/digests
         run: |
-          echo buildx imagetools create $(jq -cr '.[1] as $registries | .[0].tags | map(. as $tag | $registries | map("-t " + . + "/" + $tag)) | flatten | join(" ")' <<< "[$DOCKER_METADATA_OUTPUT_JSON, [\"docker.io\", \"ghcr.io\"]]") \
+          echo buildx imagetools create $(echo "$DOCKER_METADATA_OUTPUT_JSON" '["docker.io", "ghcr.io"]' | jq -scr '.[1] as $registries | .[0].tags | map(. as $tag | $registries | map("-t " + . + "/" + $tag)) | flatten | join(" ")') \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
       
       # - name: Check API Rate Limit
