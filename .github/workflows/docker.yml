@@ -100,7 +100,6 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: false
           file: ./Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -134,6 +133,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
     steps:
       - name: Download Digests
         uses: actions/download-artifact@v5
@@ -141,6 +142,9 @@ jobs:
           pattern: ${{ inputs.tag }}-digests-*
           path: /tmp/digests
           merge-multiple: true
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -170,16 +174,71 @@ jobs:
       - name: Create Manifest List and Push
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          docker buildx imagetools create $(echo "$DOCKER_METADATA_OUTPUT_JSON" '["docker.io", "ghcr.io"]' | jq -scr '.[1] as $registries | .[0].tags | map(. as $tag | $registries | map("-t " + . + "/" + $tag)) | flatten | join(" ")') \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
-          
-      - name: Push Image to GHCR
+
+      - name: Find Digest
+        id: digest
         run: |
-          docker buildx imagetools create \
-            --tag ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ inputs.tag }} \
-            ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag }}
+          echo "digest=$(docker buildx imagetools inspect mostpinkest/auto-letsencrypt:latest --format "{{json .Manifest}}" | jq -cr '.digest')" >> $GITHUB_OUTPUT
 
       - name: Inspect Image
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag }}
 
+  # attest:
+  #   runs-on: ubuntu-latest
+  #   needs: 
+  #     - build
+  #     - merge
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #     attestations: write
+  #     packages: write
+  #   strategy:
+  #     matrix:
+  #       platform: ["linux/amd64", "linux/arm64", "linux/arm/v6", "linux/arm/v7"]
+  #   steps:
+  #     - name: Artifact Suffix
+  #       id: artifact-suffix
+  #       run: |
+  #           echo "artifact-suffix=$(echo "${{ matrix.platform }}" | tr / _)" >> $GITHUB_OUTPUT
+
+  #     - name: Download Digests
+  #       uses: actions/download-artifact@v5
+  #       with:
+  #         pattern: ${{ inputs.tag }}-digests-${{ steps.artifact-suffix.outputs.artifact-suffix }}
+  #         path: /tmp/digests
+  #         merge-multiple: true
+
+  #     - name: Get Digest
+  #       id: get-digest
+  #       run: |
+  #         echo "digest=$(ls /tmp/digests/)" >> $GITHUB_OUTPUT
+
+  #     - name: Fetch SBOM
+  #       run: |
+  #         docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag }}@${{ needs.merge.outputs.digest }} --format '{{ json (index .SBOM "${{ matrix.platform }}").SPDX }}' > sbom.json
+
+  #     - name: Login to GitHub Container Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.repository_owner }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Generate SBOM Attestation for GitHub
+  #       uses: actions/attest-sbom@v2
+  #       with:
+  #         subject-name: ghcr.io/${{ env.REGISTRY_IMAGE }}
+  #         subject-digest: sha256:${{ steps.get-digest.outputs.digest }}
+  #         sbom-path: 'sbom.json'
+  #         push-to-registry: true
+
+  #     - name: Generate Artifact Attestation for GitHub
+  #       uses: actions/attest-build-provenance@v3
+  #       with:
+  #         subject-name: ghcr.io/${{ env.REGISTRY_IMAGE }}
+  #         subject-digest: sha256:${{ steps.get-digest.outputs.digest }}
+  #         push-to-registry: true
