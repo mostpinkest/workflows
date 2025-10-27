@@ -137,7 +137,7 @@ jobs:
       digest: ${{ steps.digest.outputs.digest }}
     steps:
       - name: Download Digests
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: ${{ inputs.tag }}-digests-*
           path: /tmp/digests
@@ -206,7 +206,7 @@ jobs:
   #           echo "artifact-suffix=$(echo "${{ matrix.platform }}" | tr / _)" >> $GITHUB_OUTPUT
 
   #     - name: Download Digests
-  #       uses: actions/download-artifact@v5
+  #       uses: actions/download-artifact@v6
   #       with:
   #         pattern: ${{ inputs.tag }}-digests-${{ steps.artifact-suffix.outputs.artifact-suffix }}
   #         path: /tmp/digests
