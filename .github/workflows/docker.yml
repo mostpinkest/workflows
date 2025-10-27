@@ -119,7 +119,7 @@ jobs:
             echo "artifact-suffix=$(echo "${{ matrix.platform }}" | tr / _)" >> $GITHUB_OUTPUT
 
       - name: Upload Digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ inputs.tag }}-digests-${{ steps.artifact-suffix.outputs.artifact-suffix }}
           path: /tmp/digests/*
